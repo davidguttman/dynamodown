@@ -1,0 +1,22 @@
+{
+  "name": "dynamodown",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "node ./test/index.js | faucet"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "aws-sdk": "^2.0.0-rc.20",
+    "abstract-leveldown": "^0.12.2",
+    "through2": "^0.5.1",
+    "async": "^0.9.0"
+  },
+  "devDependencies": {
+    "levelup": "^0.18.3",
+    "faucet": "0.0.1",
+    "tape": "^2.13.3"
+  }
+}
