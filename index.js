@@ -51,6 +51,13 @@ DynamoDown.prototype._open = function(options, cb) {
   }
 }
 
+DynamoDown.prototype._close = function(cb) {
+  this.ddb = null
+  setImmediate(function() {
+    return cb(null)
+  })
+}
+
 DynamoDown.prototype._put = function(key, value, options, cb) {
   var params = {
     TableName: this.tableName,
@@ -58,7 +65,7 @@ DynamoDown.prototype._put = function(key, value, options, cb) {
       hkey: { S: this.hashKey },
       rkey: { S: key },
       value: {
-        S: value
+        S: value.toString()
       }
     }
   }
