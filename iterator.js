@@ -4,11 +4,16 @@ var through2 = require('through2')
 var AbstractIterator = require('abstract-leveldown').AbstractIterator
 
 var DynamoIterator = module.exports = function (db, options) {
+  var self = this
+
   AbstractIterator.call(this, db)
 
   this.db = db
   this.ddb = db.ddb
   this._results = this.createReadStream(options)
+  this._results.on('end', function() {
+    self._endEmitted = true
+  })
 }
 
 util.inherits(DynamoIterator, AbstractIterator)
