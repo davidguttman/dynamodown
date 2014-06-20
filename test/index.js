@@ -1,8 +1,6 @@
 var test       = require('tape')
-  , testCommon = require('abstract-leveldown/testCommon')
+  , testCommon = require('./testCommon')
   , DynamoDown    = require('../')
-
-testCommon.location = function() {return 'test-table'}
 
 var dynOpts = {
   region: 'us-east-1',
