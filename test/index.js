@@ -35,9 +35,9 @@ require('abstract-leveldown/abstract/put-test').all(leveldown, test, testCommon)
 require('abstract-leveldown/abstract/batch-test').all(leveldown, test, testCommon)
 
 require('abstract-leveldown/abstract/close-test').close(leveldown, test, testCommon)
+require('abstract-leveldown/abstract/iterator-test').all(leveldown, test, testCommon)
 
 // Not passing:
 // // require('abstract-leveldown/abstract/put-get-del-test').all(leveldown, test, testCommon, testBuffer)
 // require('abstract-leveldown/abstract/chained-batch-test').all(leveldown, test, testCommon)
-// require('abstract-leveldown/abstract/iterator-test').all(leveldown, test, testCommon)
 // require('abstract-leveldown/abstract/ranges-test').all(leveldown, test, testCommon)

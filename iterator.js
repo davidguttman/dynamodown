@@ -54,8 +54,6 @@ DynamoIterator.prototype._next = function(cb) {
 DynamoIterator.prototype.createReadStream = function(opts) {
   var self = this
 
-  opts.start = opts.start || '\00'
-  opts.end = opts.end || '\xff\xff\xff\xff'
   if (opts.limit < 1) opts.limit = undefined
 
   var stream = through2.obj(function(data, enc, cb) {
@@ -89,6 +87,20 @@ DynamoIterator.prototype.createReadStream = function(opts) {
 }
 
 DynamoIterator.prototype.getRange = function(opts, cb) {
+  // var defaultStart = '\00'
+  // var defaultEnd =  '\xff\xff\xff\xff\xff\xff\xff\xff'
+
+  var rkey = createRKey(opts)
+
+
+  // if (opts.reverse) {
+  //   opts.start = opts.end || defaultEnd
+  //   opts.end = opts.start || defaultStart
+  // } else {
+  //   opts.start = opts.start || defaultStart
+  //   opts.end = opts.end || defaultEnd
+  // }
+
   var params = {
     TableName: this.db.tableName,
     KeyConditions: {
@@ -98,18 +110,67 @@ DynamoIterator.prototype.getRange = function(opts, cb) {
           { S: this.db.hashKey }
         ]
       },
-      rkey: {
-        ComparisonOperator: 'BETWEEN',
-        AttributeValueList: [
-          { S: opts.start },
-          { S: opts.end }
-        ]
-      }
+      rkey: rkey
     },
     Limit: opts.limit,
     ScanIndexForward: !opts.reverse,
     ExclusiveStartKey: opts.ExclusiveStartKey
   }
 
+  // console.log('params', JSON.stringify(params, null, 2));
   this.ddb.query(params, cb)
+}
+
+function createRKey (opts) {
+  var defaultStart = '\00'
+  var defaultEnd =  '\xff\xff\xff\xff\xff\xff\xff\xff'
+
+  if (!opts.start && !opts.end) {
+
+    return {
+      ComparisonOperator: 'BETWEEN',
+      AttributeValueList: [
+        { S: defaultStart },
+        { S: defaultEnd }
+      ]
+    }
+  }
+
+  if (!opts.end) {
+    var op = opts.reverse ? 'LE' : 'GE'
+    return {
+      ComparisonOperator: op,
+      AttributeValueList: [
+        { S: opts.start }
+      ]
+    }
+  }
+
+  if (!opts.start) {
+    var op = opts.reverse ? 'GE' : 'LE'
+    return {
+      ComparisonOperator: op,
+      AttributeValueList: [
+        { S: opts.end }
+      ]
+    }
+  }
+
+  if (opts.reverse) {
+    return {
+      ComparisonOperator: 'BETWEEN',
+      AttributeValueList: [
+        { S: opts.end },
+        { S: opts.start }
+      ]
+    }
+  }
+
+  return {
+    ComparisonOperator: 'BETWEEN',
+    AttributeValueList: [
+      { S: opts.start },
+      { S: opts.end }
+    ]
+  }
 }
