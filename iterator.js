@@ -70,7 +70,10 @@ DynamoIterator.prototype.createReadStream = function(opts) {
     if (err) return stream.emit('error', err)
 
     data.Items.forEach(function(item) {
-      stream.write(item)
+      var filtered = false
+      if (opts.gt && !(item.rkey.S > opts.gt)) filtered = true
+      if (opts.lt && !(item.rkey.S < opts.lt)) filtered = true
+      if (!filtered) stream.write(item)
     })
 
     opts.ExclusiveStartKey = data.ExclusiveStartKey
@@ -87,19 +90,23 @@ DynamoIterator.prototype.createReadStream = function(opts) {
 }
 
 DynamoIterator.prototype.getRange = function(opts, cb) {
-  // var defaultStart = '\00'
-  // var defaultEnd =  '\xff\xff\xff\xff\xff\xff\xff\xff'
+  if (opts.gte) {
+    if (opts.reverse) {
+      opts.end = opts.gte
+    } else {
+      opts.start = opts.gte
+    }
+  }
+
+  if (opts.lte) {
+    if (opts.reverse) {
+      opts.start = opts.lte
+    } else {
+      opts.end = opts.lte
+    }
+  }
 
   var rkey = createRKey(opts)
-
-
-  // if (opts.reverse) {
-  //   opts.start = opts.end || defaultEnd
-  //   opts.end = opts.start || defaultStart
-  // } else {
-  //   opts.start = opts.start || defaultStart
-  //   opts.end = opts.end || defaultEnd
-  // }
 
   var params = {
     TableName: this.db.tableName,
@@ -117,7 +124,6 @@ DynamoIterator.prototype.getRange = function(opts, cb) {
     ExclusiveStartKey: opts.ExclusiveStartKey
   }
 
-  // console.log('params', JSON.stringify(params, null, 2));
   this.ddb.query(params, cb)
 }
 
@@ -125,8 +131,35 @@ function createRKey (opts) {
   var defaultStart = '\00'
   var defaultEnd =  '\xff\xff\xff\xff\xff\xff\xff\xff'
 
-  if (!opts.start && !opts.end) {
+  if (opts.gt && opts.lt) {
+    return {
+      ComparisonOperator: 'BETWEEN',
+      AttributeValueList: [
+        { S: opts.gt },
+        { S: opts.lt }
+      ]
+    }
+  }
 
+  if (opts.lt) {
+    return {
+      ComparisonOperator: 'LT',
+      AttributeValueList: [
+        { S: opts.lt }
+      ]
+    }
+  }
+
+  if (opts.gt) {
+    return {
+      ComparisonOperator: 'GT',
+      AttributeValueList: [
+        { S: opts.gt }
+      ]
+    }
+  }
+
+  if (!opts.start && !opts.end) {
     return {
       ComparisonOperator: 'BETWEEN',
       AttributeValueList: [
