@@ -53,8 +53,13 @@ DynamoIterator.prototype._next = function(cb) {
 
 DynamoIterator.prototype.createReadStream = function(opts) {
   var self = this
+  var returnCount = 0
 
   if (opts.limit < 1) opts.limit = undefined
+
+  var isFinished = function() {
+    return (opts.limit && returnCount > opts.limit)
+  }
 
   var stream = through2.obj(function(data, enc, cb) {
     var output = {
@@ -62,7 +67,8 @@ DynamoIterator.prototype.createReadStream = function(opts) {
       value: data.value.S
     }
 
-    this.push(output)
+    returnCount += 1
+    if (!isFinished()) this.push(output)
     cb()
   })
 
@@ -77,7 +83,7 @@ DynamoIterator.prototype.createReadStream = function(opts) {
     })
 
     opts.ExclusiveStartKey = data.LastEvaluatedKey
-    if (opts.ExclusiveStartKey) {
+    if (opts.ExclusiveStartKey && !isFinished()) {
       self.getRange(opts, onData)
     } else {
       stream.end()
