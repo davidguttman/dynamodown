@@ -11,8 +11,11 @@ var dynOpts = {
   }
 }
 
+var iDB = 0
 function leveldown (location) {
-  var dd = DynamoDown(location)
+  iDB += 1
+  var loc = location && [location,iDB].join('/')
+  var dd = DynamoDown(loc)
   dd.oldOpen = dd._open
   dd._open = function(opts, cb) {
     opts.createIfMissing = true
