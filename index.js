@@ -115,13 +115,62 @@ DynamoDown.prototype._del = function(key, options, cb) {
 DynamoDown.prototype._batch = function (array, options, cb) {
   var self = this
 
-  async.eachSeries(array, function (item, cb) {
-    if (item.type === 'put') {
-      self._put(item.key, item.value, options, cb)
-    } else if (item.type === 'del') {
-      self._del(item.key, options, cb)
+  var opKeys = {}
+  var multipleOpError = false
+
+  tableName = this.tableName
+  var ops = array.map(function(item) {
+    if (opKeys[item.key]) multipleOpError = true
+    opKeys[item.key] = true
+
+    if (item.type === 'del') {
+      var op = {
+        DeleteRequest: {
+          Key: {
+            hkey: { S: self.hashKey },
+            rkey: { S: item.key }
+          }
+        }
+      }
+    } else {
+      var op = {
+        PutRequest: {
+          Item: {
+            hkey: { S: self.hashKey },
+            rkey: { S: item.key },
+            value: {
+              S: item.value.toString()
+            }
+          }
+        }
+      }
     }
-  }, cb)
+
+    return op
+  })
+
+  if (multipleOpError) return cb(new Error('Cannot perform multiple operations on the same item in a batch (DynamoDB limitation)'))
+
+  var params = {RequestItems: {}}
+
+  var loop = function(err, data) {
+    if (err) return cb(err)
+
+    var reqs = []
+
+    if (data && data.UnprocessedItems && data.UnprocessedItems[tableName]) {
+      reqs.push.apply(reqs, data.UnprocessedItems[tableName])
+    }
+
+    reqs.push.apply(reqs, ops.splice(0, 25 - reqs.length))
+
+    if (reqs.length === 0) return cb()
+
+    params.RequestItems[tableName] = reqs
+    self.ddb.batchWriteItem(params, loop)
+  }
+
+  loop()
 }
 
 DynamoDown.prototype._iterator = function(options) {
